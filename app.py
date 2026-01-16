@@ -1,201 +1,123 @@
 import streamlit as st
+from streamlit.runtime.scriptrunner import RerunException, RerunData
 
+# ---------------------------
 # 1. Page Configuration
-st.set_page_config(
-    page_title="CipherSphere",
-    page_icon="🚀",
-    layout="centered"
-)
+# ---------------------------
+st.set_page_config(page_title="CipherSphere", page_icon="🔒", layout="centered")
 
-# 2. Custom CSS
+# ---------------------------
+# 2. Session State for Navigation
+# ---------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "user_email" not in st.session_state:
+    st.session_state.user_email = ""
+
+if "new_user" not in st.session_state:
+    st.session_state.new_user = False  # Flag for new signup
+
+# ---------------------------
+# 3. Custom CSS for styling
+# ---------------------------
 st.markdown("""
     <style>
-    .stApp {
-        background-color: white;
-    }
-
-    h1, h2, h3, h4, h5, h6, label, p {
-        color: #222222;
-    }
-
-    .stButton > button {
-        width: 100%;
-        height: 3em;
-        background-color: #007BFF;
-        color: white;
-        border-radius: 6px;
-        border: none;
-        font-size: 16px;
-    }
-
-    .stTextInput input {
-        border-radius: 6px;
-    }
-
-    [data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-    }
+    .main { background-color: white; color: #000; }
+    .stTextInput>div>div>input { background-color: #f9f9f9; color: #000; }
+    .css-1avcm0n .st-c8 { color: #007bff; font-weight: bold; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; font-weight: bold; }
+    [data-testid="stImage"] { display: flex; justify-content: center; }
+    h1.ciphersphere { text-align: center; color: #007bff; font-size: 2.5em; font-weight: bold; }
+    footer { visibility: hidden; }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Logo + Welcome Section
-st.markdown("<br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 2, 1])
+# ---------------------------
+# 4. Master Password Pages
+# ---------------------------
 
-with col2:
-    st.image("https://via.placeholder.com/140", width=140)
-    st.markdown(
-        "<h1 style='text-align:center; color:#007BFF;'>CipherSphere</h1>"
-        "<p style='text-align:center; color: #555;'>Please login or create an account</p>",
-        unsafe_allow_html=True
-    )
-
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-# 4. Login & Signup BELOW
-tab1, tab2 = st.tabs(["🔐 Log In", "📝 Sign Up"])
-
-# -------- LOGIN TAB --------
-with tab1:
-    st.markdown("### Login to your account")
-    email_log = st.text_input("Email Address", placeholder="example@mail.com", key="login_email_tab1")
-    pass_log = st.text_input("Password", type="password", key="login_pass_tab1")
-
-    if st.button("Login", key="login_button_tab1"):
-        if email_log and pass_log:
-            st.success(f"Welcome back, {email_log}!")
+# If a new user just signed up → Create Master Password
+if st.session_state.new_user:
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.title("Create Your Master Password 🔒")
+    
+    master_pass = st.text_input("Master Password", type="password", key="new_master_pass")
+    confirm_pass = st.text_input("Confirm Master Password", type="password", key="confirm_master_pass")
+    
+    if st.button("Set Master Password"):
+        if master_pass and master_pass == confirm_pass:
+            st.success("Master Password set successfully!")
+            st.session_state.logged_in = True
+            st.session_state.new_user = False  # Reset flag
+            raise RerunException(RerunData())
         else:
-            st.error("Please enter both email and password.")
+            st.error("Passwords do not match or are empty.")
 
-# -------- SIGNUP TAB --------
-with tab2:
-    st.markdown("### Create a new account")
-    new_user = st.text_input("Email Address", placeholder="yourname@mail.com", key="signup_email_tab2")
-    new_pass = st.text_input("Password", type="password", key="signup_pass_tab2")
-    confirm_pass = st.text_input("Confirm Password", type="password", key="signup_confirm_tab2")
-
-    if st.button("Register", key="signup_button_tab2"):
-        if not new_user or not new_pass:
-            st.error("All fields are required.")
-        elif new_pass != confirm_pass:
-            st.error("Passwords do not match.")
+# If existing user logged in → Enter Master Password
+elif st.session_state.logged_in:
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.title("Enter Your Master Password 🔒")
+    master_pass = st.text_input("Master Password", type="password", key="master_pass_input")
+    
+    if st.button("Submit"):
+        # Replace with actual master password validation
+        if master_pass == "123456":  # Placeholder
+            st.success(f"Access Granted! Welcome {st.session_state.user_email}")
         else:
-            st.success("Account created successfully!")
+            st.error("Incorrect Master Password")
+    
+    # Logout button
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.user_email = ""
+        raise RerunException(RerunData())
 
-# 5. Footer
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown("---")
-st.markdown(
-    "<p style='text-align:center; color: #777;'>© 2026 CipherSphere</p>",
-    unsafe_allow_html=True
-)
-import streamlit as st
+# ---------------------------
+# 5. Homepage with Login/Signup
+# ---------------------------
+else:
+    # Logo Section
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("logo.png", width=250)
+        st.markdown("<h1 class='ciphersphere'>CipherSphere</h1>", unsafe_allow_html=True)
 
-# 1. Page Configuration
-st.set_page_config(
-    page_title="CipherSphere",
-    page_icon="🚀",
-    layout="wide"
-)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-# 2. Custom CSS
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: white;
-    }
+    # Login/Signup Tabs
+    tab1, tab2 = st.tabs(["Log In", "Sign Up"])
 
-    h1 {
-        color: #007BFF;
-        text-align: center;
-        margin-bottom: 10px;
-    }
+    # ----- Login Tab -----
+    with tab1:
+        st.subheader("Login to your account")
+        email_log = st.text_input("Email", key="login_email", placeholder="example@mail.com")
+        pass_log = st.text_input("Password", type="password", key="login_pass")
+        
+        if st.button("Login"):
+            if email_log and pass_log:
+                st.session_state.logged_in = True
+                st.session_state.user_email = email_log
+                raise RerunException(RerunData())
+            else:
+                st.error("Please enter your credentials.")
 
-    .stButton>button {
-        width: 100%;
-        height: 2.5em;
-        background-color: #007BFF;
-        color: white;
-        border-radius: 6px;
-        border: none;
-        font-size: 14px;
-    }
+    # ----- Sign Up Tab -----
+    with tab2:
+        st.subheader("Create a new account")
+        new_user_email = st.text_input("Email", key="signup_email", placeholder="yourname@mail.com")
+        new_pass = st.text_input("Password", type="password", key="signup_pass")
+        confirm_pass = st.text_input("Confirm Password", type="password", key="signup_confirm")
+        
+        if st.button("Register"):
+            if new_pass == confirm_pass and new_user_email:
+                st.success("Account created successfully!")
+                st.session_state.user_email = new_user_email
+                st.session_state.new_user = True
+                raise RerunException(RerunData())
+            else:
+                st.error("Passwords do not match or email is empty.")
 
-    .stTextInput>div>div>input {
-        border-radius: 6px;
-        height: 2em;
-    }
-
-    .box {
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 10px;
-        background-color: #f9f9f9;
-        box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
-    }
-
-    .center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .footer {
-        text-align: center;
-        color: #777;
-        margin-top: 30px;
-        font-size: 12px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# 3. Header with Logo
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown(f"""
-<div class="center">
-    <img src="logo.jpg" width="100"><br>
-    <h1>CipherSphere</h1>
-</div>
-""", unsafe_allow_html=True)
-
-# 4. Layout: Login and Signup side by side
-col1, col2, col3 = st.columns([1, 2, 1])  # center layout
-
-with col2:
-    # Container for both boxes
-    st.markdown('<div class="center">', unsafe_allow_html=True)
-
-    # -------- LOGIN BOX --------
-    st.markdown('<div class="box" style="width: 280px; margin-right: 20px;">', unsafe_allow_html=True)
-    st.markdown("### Log In", unsafe_allow_html=True)
-    email_log = st.text_input("Email Address", placeholder="example@mail.com", key="login_email")
-    pass_log = st.text_input("Password", type="password", key="login_pass")
-    if st.button("Login", key="login_button"):
-        if email_log and pass_log:
-            st.success(f"Welcome back, {email_log}!")
-        else:
-            st.error("Please enter both email and password.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # -------- SIGNUP BOX --------
-    st.markdown('<div class="box" style="width: 280px; margin-left: 20px;">', unsafe_allow_html=True)
-    st.markdown("### Sign Up", unsafe_allow_html=True)
-    new_user = st.text_input("Email Address", placeholder="yourname@mail.com", key="signup_email")
-    new_pass = st.text_input("Password", type="password", key="signup_pass")
-    confirm_pass = st.text_input("Confirm Password", type="password", key="signup_confirm")
-    if st.button("Register", key="signup_button"):
-        if not new_user or not new_pass:
-            st.error("All fields are required.")
-        elif new_pass != confirm_pass:
-            st.error("Passwords do not match.")
-        else:
-            st.success("Account created successfully!")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)  # end container
-
-# 5. Footer
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown('<div class="footer">© 2026 CipherSphere</div>', unsafe_allow_html=True)
+    # Footer
+    st.markdown("---")
+    st.markdown("<p style='text-align: center; color: grey;'>© 2026 CipherSphere</p>", unsafe_allow_html=True)
