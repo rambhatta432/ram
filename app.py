@@ -1,4 +1,3 @@
-
 import streamlit as st
 import random
 import smtplib
@@ -14,23 +13,20 @@ st.set_page_config(page_title="CipherSphere", page_icon="🔒", layout="centered
 # =========================================================
 if "page" not in st.session_state:
     st.session_state.page = "home"
-
 if "user_email" not in st.session_state:
     st.session_state.user_email = ""
-
 if "otp" not in st.session_state:
     st.session_state.otp = ""
-
 if "otp_sent" not in st.session_state:
     st.session_state.otp_sent = False
+if "password_vault" not in st.session_state:
+    st.session_state.password_vault = []  # List of dicts to store credentials
 
 # =========================================================
 # EMAIL LOGIC
 # =========================================================
 def send_otp(receiver_email):
     otp = str(random.randint(100000, 999999))
-    
-    # Update these with your Gmail App Password for actual sending
     SENDER_EMAIL = "yourgmail@gmail.com"
     SENDER_PASSWORD = "your_gmail_app_password" 
 
@@ -45,8 +41,10 @@ def send_otp(receiver_email):
     return otp
 
 # =========================================================
-# HOME PAGE
+# NAVIGATION LOGIC
 # =========================================================
+
+# --- 1. HOME PAGE ---
 if st.session_state.page == "home":
     st.title("🔒 CipherSphere")
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
@@ -54,7 +52,7 @@ if st.session_state.page == "home":
     with tab1:
         st.text_input("Email", key="l_email")
         st.text_input("Password", type="password", key="l_pass")
-        if st.button("Login"):
+        if st.button("Login", use_container_width=True):
             st.session_state.page = "dashboard"
             st.rerun()
 
@@ -62,76 +60,100 @@ if st.session_state.page == "home":
         signup_email = st.text_input("Email", key="s_email")
         signup_pass = st.text_input("Password", type="password", key="s_pass")
         signup_confirm = st.text_input("Confirm Password", type="password", key="s_confirm")
-
-        if st.button("Register"):
+        if st.button("Register", use_container_width=True):
             if signup_email and signup_pass == signup_confirm:
                 st.session_state.user_email = signup_email
                 st.session_state.page = "master_password"
                 st.rerun()
             else:
-                st.error("Passwords do not match or fields are empty")
+                st.error("Invalid input or passwords do not match")
 
-# =========================================================
-# MASTER PASSWORD PAGE
-# =========================================================
+# --- 2. MASTER PASSWORD PAGE ---
 elif st.session_state.page == "master_password":
     st.title("Create Master Password 🔐")
     mp = st.text_input("Master Password", type="password")
     cp = st.text_input("Confirm Master Password", type="password")
-
-    if st.button("Create"):
+    if st.button("Continue"):
         if mp == cp and mp != "":
             st.session_state.page = "email_verification"
             st.rerun()
         else:
-            st.error("Passwords do not match")
+            st.error("Passwords must match")
 
-# =========================================================
-# EMAIL VERIFICATION PAGE (MODIFIED TO ALWAYS PROCEED)
-# =========================================================
+# --- 3. EMAIL VERIFICATION PAGE ---
 elif st.session_state.page == "email_verification":
     st.title("Verify Your Email 📧")
-    
     if not st.session_state.otp_sent:
-        st.write(f"OTP will be sent to **{st.session_state.user_email}**")
         if st.button("Send OTP"):
             try:
-                # Attempt to send
                 st.session_state.otp = send_otp(st.session_state.user_email)
                 st.success("OTP sent!")
             except Exception as e:
-                # Even if it fails (Bad Credentials), we set a dummy OTP and move on
-                st.error(f"Google Error: {e}")
-                st.warning("Switching to verification page anyway. (Use '000000' to test)")
+                st.error(f"Gmail Error: {e}")
+                st.warning("Proceeding with test code: 000000")
                 st.session_state.otp = "000000" 
-            
-            # This line ensures the next screen opens regardless of success/fail
             st.session_state.otp_sent = True
             st.rerun()
-
     else:
-        st.info(f"Enter the code sent to {st.session_state.user_email}")
-        user_otp = st.text_input("Enter OTP", placeholder="123456")
-
-        if st.button("Verify OTP"):
+        user_otp = st.text_input("Enter 6-digit Code")
+        if st.button("Verify & Enter Vault"):
             if user_otp == st.session_state.otp:
-                st.success("Email Verified!")
                 st.session_state.page = "dashboard"
                 st.rerun()
             else:
                 st.error("Invalid OTP")
-        
-        if st.button("Back to Home"):
-            st.session_state.otp_sent = False
-            st.session_state.page = "home"
+
+# --- 4. DASHBOARD (SEARCH & ADD PASSWORDS) ---
+elif st.session_state.page == "dashboard":
+    st.title("🔓 Your Secure Vault")
+    st.write(f"Logged in as: **{st.session_state.user_email}**")
+    
+    # Sidebar for Navigation/Logout
+    with st.sidebar:
+        if st.button("Logout"):
+            st.session_state.clear()
             st.rerun()
 
-# =========================================================
-# DASHBOARD
-# =========================================================
-elif st.session_state.page == "dashboard":
-    st.title("🔓 Vault Dashboard")
-    st.success(f"Welcome, {st.session_state.user_email}")
-    if st.button("Logout"):
-        st.session_state.clear()
-        st.rerun()
+    # Layout for Search and Add
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.subheader("➕ Add New Credential")
+        new_site = st.text_input("Website/App Name")
+        new_user = st.text_input("Username/Email")
+        new_pass = st.text_input("Password", type="password")
+        
+        if st.button("Save to Vault"):
+            if new_site and new_user and new_pass:
+                st.session_state.password_vault.append({
+                    "site": new_site,
+                    "user": new_user,
+                    "pass": new_pass
+                })
+                st.success(f"Saved credentials for {new_site}!")
+            else:
+                st.warning("Please fill all fields")
+
+    with col2:
+        st.subheader("🔍 Search Vault")
+        search_query = st.text_input("Search by Website Name")
+        
+        if search_query:
+            results = [item for item in st.session_state.password_vault if search_query.lower() in item['site'].lower()]
+            if results:
+                for res in results:
+                    with st.expander(f"📍 {res['site']}"):
+                        st.write(f"**Username:** {res['user']}")
+                        st.write(f"**Password:** `{res['pass']}`")
+            else:
+                st.info("No matching credentials found.")
+        else:
+            st.info("Enter a website name to search.")
+
+    st.divider()
+    st.subheader("📋 All Credentials")
+    if not st.session_state.password_vault:
+        st.write("Your vault is empty.")
+    else:
+        # Display as a table for clarity
+        st.table(st.session_state.password_vault)
